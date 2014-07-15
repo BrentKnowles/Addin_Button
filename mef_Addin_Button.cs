@@ -20,11 +20,11 @@ namespace MefAddIns
 	 * So basically the text-note itself is linked to in each of these derived layouts and then a checklist is added, feeding from the linked note.
 	 */
 	[Export(typeof(mef_IBase))]
-	public class Addin_Facts:PlugInBase, mef_IBase
+	public class Addin_Button:PlugInBase, mef_IBase
 	{
 		
 		
-		public Addin_Facts ()
+		public Addin_Button ()
 		{
 			guid = "ButtonNote";
 		}
@@ -33,9 +33,12 @@ namespace MefAddIns
 		{
 			get { return @"Brent Knowles"; }
 		}
+		/*
+		 * 1.0.0.1 - Noticed this was given the same class name as Addin_Facts... which seems wrong
+		 */
 		public string Version
 		{
-			get { return @"1.0.0.0"; }
+			get { return @"1.0.0.1"; }
 		}
 		public string Description
 		{

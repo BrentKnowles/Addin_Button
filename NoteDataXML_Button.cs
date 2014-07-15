@@ -71,6 +71,16 @@ namespace ADD_Button
 		{
 			//this.Notelink = ((NoteDataXML_Checklist)Note).Notelink;
 		}
+
+		public override void CopyNote (NoteDataInterface Note)
+		{
+			base.CopyNote (Note);
+			this.PrimaryDetails = ((NoteDataXML_Button)Note).PrimaryDetails;
+			this.SecondaryDetails = ((NoteDataXML_Button)Note).SecondaryDetails;
+
+		}
+
+
 		protected override void CommonConstructorBehavior ()
 		{
 			base.CommonConstructorBehavior ();
@@ -260,6 +270,110 @@ namespace ADD_Button
 		{
 			return @"%*control_play.png";
 		}
+
+		/// <summary>
+		/// Function_s the even windows_ across monitors.
+		/// 
+		/// First code will be on the 1st monitor, the seocond on the next
+		/// Third and further elements ignored.
+		/// </summary>
+		/// <param name='secondarycode'>
+		/// Secondarycode.
+		/// </param>
+		/// <param name='alpha'>
+		/// If set to <c>true</c> alpha.
+		/// </param>
+		void Function_EvenWindows_AcrossMonitors (string secondarycode, bool alpha)
+		{
+			if (secondarycode != Constants.BLANK) {
+				string[] windows = GetNotesToOperateOn (secondarycode);
+
+
+				if (windows.Length != 4) {
+					NewMessage.Show ("The secondary string must be in the format of monitor1offset,monitor2offset,window1ToOpen,Window2ToOpen");
+					return;
+				}
+				int overrideLeftMonitor1 = 0;
+				if (Int32.TryParse (windows [0], out overrideLeftMonitor1) == false)
+					NewMessage.Show (Loc.Instance.GetString ("Parse failed 1"));
+
+				//NewMessage.Show (overrideLeftMonitor1.ToString ());
+
+				int overrideLeftMonitor2 = 0;
+				if (Int32.TryParse (windows [1], out overrideLeftMonitor2) == false)
+					NewMessage.Show (Loc.Instance.GetString ("Parse failed 2"));
+				//NewMessage.Show (overrideLeftMonitor2.ToString ());
+
+				if (windows != null) {
+					// we need to start the counter low because we pass 4 entries in but skip the first two
+					int counter = -2;
+					LayoutPanelBase MyLayout = Layout;
+					GetMasterLayoutToUse (ref MyLayout);
+					
+					System.Windows.Forms.Screen[] currentScreen = System.Windows.Forms.Screen.AllScreens;
+//					int Width = MyLayout.Width;
+//					int Height = MyLayout.Height - MyLayout.HeightOfToolbars (); 
+					foreach (string notename in windows) {
+
+						if (notename != Constants.BLANK) {
+							counter++;
+							if (counter > 0) {
+								NoteDataInterface note = MyLayout.FindNoteByName (notename);
+								if (note != null) {
+								
+									note = MyLayout.GoToNote (note);
+									if (note != null) {
+
+										int NewWidth = 0;
+										int NewHeight = 0;
+										int newLeft = 0;
+										int NewTop = 0;
+										int WindowToUse = 0;
+										// if we have only one monitor then we use it for both notes (which doesn't make sense but is all we can do0
+										if (counter == 1 || currentScreen.Length == 1) {
+										//	NewMessage.Show ("set to " + overrideLeftMonitor1);
+											newLeft = overrideLeftMonitor1;
+										} else {
+											newLeft = overrideLeftMonitor2;
+											// 2nd or other, will always try to refer to '2nd' screen
+											WindowToUse = 1;
+										}
+//									string message = String.Format ("Device Name: {0}\nBounds: {1}\nType: {2}\nWorking Area: {3}",
+//									                                currentScreen[WindowToUse].DeviceName, currentScreen[WindowToUse].Bounds.ToString (),
+//									                                currentScreen[WindowToUse].GetType().ToString (),currentScreen[WindowToUse].WorkingArea.ToString ());
+//											NewMessage.Show(message);
+
+										int buffer = 40;//currentScreen[WindowToUse].
+										//NewMessage.Show (newLeft.ToString ());
+										if (0 == newLeft) {
+											newLeft = currentScreen [WindowToUse].WorkingArea.Left;//+buffer;
+										}
+										NewTop = currentScreen [WindowToUse].WorkingArea.Top;//+buffer;
+										NewWidth = currentScreen [WindowToUse].WorkingArea.Width - buffer;
+										NewHeight = currentScreen [WindowToUse].WorkingArea.Height - (buffer*2);
+
+
+								
+										note.Width = NewWidth;
+										note.Height = NewHeight;
+
+
+										if (note is NoteDataXML_SystemOnly) {
+											//NewMessage.Show ("System Note");
+											note.Maximize (true);
+											note.Maximize (false);
+										}
+										note.Location = new Point (newLeft, NewTop);
+										note.UpdateLocation ();
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
 		void HandleActionButtonClick (object sender, EventArgs e)
 		{
 			if (ParentNotePanel != null) {
@@ -268,40 +382,36 @@ namespace ADD_Button
 					string primarycode = PrimaryDetails [i];
 
 					string secondarycode = Constants.BLANK;
-					try
-					{
-						secondarycode = SecondaryDetails[i];
-					}
-					catch (Exception)
-					{
+					try {
+						secondarycode = SecondaryDetails [i];
+					} catch (Exception) {
 						// somtimes this will be empty, and we just ignore it
 						secondarycode = Constants.BLANK;
 					}
 					if (primarycode == "beep") {
 						Function_Beep (secondarycode);
-					}
-					else
+					} else
 						if (primarycode == "evenwindows_alpha") {
-							Function_EvenWindows (secondarycode,true);
-						}
-						else
+						Function_EvenWindows (secondarycode, true);
+					} else
 							if (primarycode == "popup") {
-								Function_Popup (secondarycode);
-							}
-					else
+						Function_Popup (secondarycode);
+					} else
 					if (primarycode == "notevisible_true") {
 						Function_Visible (secondarycode, true);
-					}
-					else
+					} else
+						if (primarycode == "evenwindows_across_monitors_alpha") {
+						Function_EvenWindows_AcrossMonitors(secondarycode, false);
+					} else
 					if (primarycode == "notevisible_false") {
 						Function_Visible (secondarycode, false);
-					}
+					} else
 					if (primarycode == "hotkey") {
 						// how to access this? need to access parent somehow
 						// a callback probably
 						// anyway to tie into HOTKEY system for this? actually access those tokens directly? Like how plugins do this?
 						// idealy I'd want set to Extendview and Arrange my two current windows side by side
-						LayoutDetails.Instance.ManualRunHotkeyOperation(secondarycode);
+						LayoutDetails.Instance.ManualRunHotkeyOperation (secondarycode);
 					}
 				}
 
